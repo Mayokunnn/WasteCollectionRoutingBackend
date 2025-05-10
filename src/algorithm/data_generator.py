@@ -44,7 +44,6 @@ def visualize_graph(G, route=None):
     pos = nx.get_node_attributes(G, 'pos')
     labels = nx.get_edge_attributes(G, 'weight')
 
-    # Node colors: red for full bins, blue otherwise
     node_colors = []
     for node in G.nodes():
         fill = G.nodes[node].get("fill_level", 0)
@@ -57,7 +56,6 @@ def visualize_graph(G, route=None):
     nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=600, font_weight='bold')
     nx.draw_networkx_edge_labels(G, pos, edge_labels={k: f"{v:.1f}" for k, v in labels.items()})
 
-    # Highlight optimized route with green edges
     if route and len(route) > 1:
         route_edges = [(route[i], route[i+1]) for i in range(len(route)-1)]
         nx.draw_networkx_edges(G, pos, edgelist=route_edges, edge_color='green', width=3)
