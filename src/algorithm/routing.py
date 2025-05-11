@@ -1,121 +1,139 @@
-import networkx as nx
-from copy import deepcopy
+import functools
 
-def find_best_route_2opt(graph: nx.Graph, threshold: float = 0.7):
+import networkx as nx
+from networkx import NetworkXNoPath
+
+def find_best_route(graph: nx.Graph, threshold: float = 0.7):
     """
-    1) Build an initial route with the same greedy Dijkstra approach.
-    2) Then repeatedly apply 2-opt swaps to remove crossing edges and shorten the tour.
+    Builds an initial greedy route covering all full bins,
+    then improves the route using 2-opt while ensuring all full bins remain in the route.
     """
-    # 1) Seed with greedy Dijkstra
     full_bins = [n for n, d in graph.nodes(data=True) if d["fill_level"] >= threshold]
     if len(full_bins) < 2:
         return [], 0, 0
 
-    # greedy start
+    # 1. Start with greedy route (Dijkstra-based)
     route = [full_bins[0]]
     visited = {route[0]}
     total_dist = 0
     current = route[0]
 
-    # build initial greedy route
     while len(visited) < len(full_bins):
-        best, best_d = None, float("inf")
-        for tgt in full_bins:
-            if tgt in visited:
-                continue
-            try:
-                d = nx.dijkstra_path_length(graph, current, tgt, weight="weight")
-                if d < best_d:
-                    best, best_d = tgt, d
-            except nx.NetworkXNoPath:
-                pass
-        if not best:
-            break
-        path = nx.dijkstra_path(graph, current, best, weight="weight")
-        # append intermediate nodes only if they’re new
-        for n in path[1:]:
-            if n not in visited:
-                route.append(n)
-                visited.add(n)
-        total_dist += best_d
-        current = best
+        nearest = None
+        min_dist = float('inf')
+        for target in full_bins:
+            if target not in visited:
+                try:
+                    dist = nx.dijkstra_path_length(graph, current, target, weight="weight")
+                    if dist < min_dist:
+                        nearest = target
+                        min_dist = dist
+                except nx.NetworkXNoPath:
+                    continue
 
-    # 2) Precompute distance matrix between route nodes
-    import functools
+        if not nearest:
+            break
+
+        path = nx.dijkstra_path(graph, current, nearest, weight="weight")
+        for node in path[1:]:
+            if node not in route:
+                route.append(node)
+                visited.add(node)
+        total_dist += min_dist
+        current = nearest
+
+    # 2. 2-opt optimization
     @functools.lru_cache(None)
     def dist(i, j):
         return nx.dijkstra_path_length(graph, route[i], route[j], weight="weight")
 
-    # 3) 2-opt improvement
     improved = True
     while improved:
         improved = False
         for i in range(1, len(route) - 2):
             for j in range(i + 1, len(route) - 1):
-                # cost before swap: edges (i−1→i) + (j→j+1)
                 before = dist(i - 1, i) + dist(j, j + 1)
-                # cost after swap: (i−1→j) + (i→j+1)
                 after = dist(i - 1, j) + dist(i, j + 1)
                 if after + 1e-6 < before:
-                    # perform 2-opt: reverse segment [i..j]
-                    route[i : j + 1] = reversed(route[i : j + 1])
+                    route[i:j + 1] = list(reversed(route[i:j + 1]))
                     improved = True
         if improved:
-            # recompute total_dist
             total_dist = sum(dist(k, k + 1) for k in range(len(route) - 1))
+
+    # 3. Ensure all full bins are still present in route
+    for full_bin in full_bins:
+        if full_bin not in route:
+            try:
+                nearest_node = min(
+                    route,
+                    key=lambda n: nx.dijkstra_path_length(graph, full_bin, n, weight="weight")
+                )
+                path = nx.dijkstra_path(graph, full_bin, nearest_node, weight="weight")
+                insert_idx = route.index(nearest_node)
+                for node in reversed(path[:-1]):
+                    if node not in route:
+                        route.insert(insert_idx, node)
+            except NetworkXNoPath:
+                print(f"No path from {full_bin} to any node in route. Skipping.")
+                continue
 
     return route, total_dist, len(route)
 
-
 def find_best_route_using_djikstra(graph: nx.Graph, threshold=0.7):
-    """
-    Finds the shortest route that connects all bins above a certain fill level using Dijkstra’s algorithm.
-    This is a simplification and not a full TSP solution.
-    """
-    # Filter full bins
     full_bins = [node for node, attr in graph.nodes(data=True) if attr['fill_level'] >= threshold]
-
     if len(full_bins) < 2:
-        return [], 0, 0  # Not enough bins to optimize
+        return [], 0, 0
 
-    total_distance = 0
-    route = []
-
-    # Greedy path: Start from the first full bin and keep going to the nearest next full bin
+    route = [full_bins[0]]
+    visited = {full_bins[0]}
     current = full_bins[0]
-    visited = {current}
-    route.append(current)
-
+    total_distance = 0
+ 
     while len(visited) < len(full_bins):
-        # Find the nearest unvisited full bin
         nearest = None
         min_dist = float('inf')
-
         for target in full_bins:
             if target not in visited:
                 try:
                     dist = nx.dijkstra_path_length(graph, current, target, weight='weight')
                     if dist < min_dist:
-                        min_dist = dist
                         nearest = target
+                        min_dist = dist
                 except nx.NetworkXNoPath:
                     continue
 
         if nearest is None:
-            break  # No reachable bin found
+            break
 
         path = nx.dijkstra_path(graph, current, nearest, weight='weight')
-        # Add path but avoid duplicates
-        route += [node for node in path[1:] if node not in visited]
+        route += [node for node in path[1:] if node not in route]
         total_distance += min_dist
         visited.add(nearest)
         current = nearest
 
-    return route, total_distance, len(visited)
+    # Ensure all full bins are in the route
+    for full_bin in full_bins:
+        if full_bin not in route:
+            try:
+                # Connect missing bin to nearest in route
+                nearest = min(route, key=lambda n: nx.dijkstra_path_length(graph, full_bin, n, weight='weight'))
+                path = nx.dijkstra_path(graph, full_bin, nearest, weight='weight')
+                insert_idx = route.index(nearest)
+                for node in reversed(path[:-1]):
+                    if node not in route:
+                        route.insert(insert_idx, node)
+                # Update distance
+                total_distance = sum(
+                    nx.dijkstra_path_length(graph, route[i], route[i + 1], weight='weight')
+                    for i in range(len(route) - 1)
+                )
+            except nx.NetworkXNoPath:
+                continue
+
+    return route, total_distance, len(route)
 
 def find_best_route_using_astar(graph: nx.Graph, threshold=0.7):
     full_bins = [node for node, attr in graph.nodes(data=True) if attr['fill_level'] >= threshold]
-
     if len(full_bins) < 2:
         return [], 0, 0
 
@@ -124,24 +142,21 @@ def find_best_route_using_astar(graph: nx.Graph, threshold=0.7):
         x2, y2 = graph.nodes[v]["pos"]
         return ((x1 - x2)**2 + (y1 - y2)**2) ** 0.5
 
-    total_distance = 0
-    route = []
-    visited = set()
+    route = [full_bins[0]]
+    visited = {full_bins[0]}
     current = full_bins[0]
-    visited.add(current)
-    route.append(current)
+    total_distance = 0
 
     while len(visited) < len(full_bins):
         nearest = None
         min_dist = float('inf')
-
         for target in full_bins:
             if target not in visited:
                 try:
                     dist = nx.astar_path_length(graph, current, target, heuristic=heuristic, weight='weight')
                     if dist < min_dist:
-                        min_dist = dist
                         nearest = target
+                        min_dist = dist
                 except nx.NetworkXNoPath:
                     continue
 
@@ -149,12 +164,29 @@ def find_best_route_using_astar(graph: nx.Graph, threshold=0.7):
             break
 
         path = nx.astar_path(graph, current, nearest, heuristic=heuristic, weight='weight')
-        route += [node for node in path[1:] if node not in visited]
+        route += [node for node in path[1:] if node not in route]
         total_distance += min_dist
         visited.add(nearest)
         current = nearest
 
-    return route, total_distance, len(visited)
+    # Ensure all full bins are in the route
+    for full_bin in full_bins:
+        if full_bin not in route:
+            try:
+                nearest = min(route, key=lambda n: nx.astar_path_length(graph, full_bin, n, heuristic=heuristic, weight='weight'))
+                path = nx.astar_path(graph, full_bin, nearest, heuristic=heuristic, weight='weight')
+                insert_idx = route.index(nearest)
+                for node in reversed(path[:-1]):
+                    if node not in route:
+                        route.insert(insert_idx, node)
+                total_distance = sum(
+                    nx.astar_path_length(graph, route[i], route[i + 1], heuristic=heuristic, weight='weight')
+                    for i in range(len(route) - 1)
+                )
+            except nx.NetworkXNoPath:
+                continue
+
+    return route, total_distance, len(route)
 
 
 def find_naive_route(graph: nx.Graph, threshold=0.7):

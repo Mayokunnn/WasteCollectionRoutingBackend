@@ -1,7 +1,6 @@
 import networkx as nx
 import matplotlib
 matplotlib.use('Agg')
-from random import sample
 from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
 import matplotlib.pyplot as plt
@@ -11,7 +10,7 @@ import uuid
 
 from src.models.response_models import RouteOptimizationResponse
 from src.algorithm.data_generator import generate_synthetic_data
-from src.algorithm.routing import find_best_route_using_djikstra, find_best_route_2opt, find_best_route_using_astar, \
+from src.algorithm.routing import find_best_route_using_djikstra, find_best_route, find_best_route_using_astar, \
     find_naive_route
 from sqlalchemy.orm import Session
 from src.database.connection import SessionLocal
@@ -29,9 +28,9 @@ def get_db():
 
 
 @router.get("/optimize-route", response_model=RouteOptimizationResponse)
-def optimize_route(bins: int = 10, threshold: float = 0.7, db: Session = Depends(get_db)):
+def optimize_route(bins: int = 20, threshold: float = 0.7, db: Session = Depends(get_db)):
     graph = generate_synthetic_data(num_bins=bins)
-    route, total_dist, bins_covered = find_best_route_2opt(graph, threshold=threshold)
+    route, total_dist, bins_covered = find_best_route(graph, threshold=threshold)
 
     # Convert graph node data to serializable form
     graph_data = {
@@ -86,7 +85,6 @@ def view_last_route(db: Session = Depends(get_db)):
     bin_data = db.query(Bin).filter(Bin.batch_id == last_route.batch_id).all()
 
     bins_positions = {b.id: b.position for b in bin_data}
-    fill_levels = {b.id: b.fill_level for b in bin_data}
     route_nodes = last_route.optimized_route
 
     img_html = visualize_graph_from_data(
@@ -143,13 +141,31 @@ def visualize_graph_from_data(bins_positions, route_nodes, edges, fill_level_dat
 
 
 @router.get("/compare-algorithms")
-def compare_algorithms(bins: int = 10, threshold: float = 0.7):
-    graph = generate_synthetic_data(num_bins=bins)
+def compare_algorithms(threshold: float = 0.7, db: Session = Depends(get_db)):
+    # Get the most recent batch ID from the routes table
+    last_route = db.query(Route).order_by(Route.id.desc()).first()
+    if not last_route:
+        return {"error": "No optimized route found yet."}
 
-    o_route, o_dist, o_cov = find_best_route_2opt(graph, threshold)
-    d_route, d_dist, d_cov = find_best_route_using_djikstra(graph, threshold)
-    a_route, a_dist, a_cov = find_best_route_using_astar(graph, threshold)
-    n_route, n_dist, n_cov = find_naive_route(graph, threshold)
+    # Get all bins from the same batch
+    bin_data = db.query(Bin).filter(Bin.batch_id == last_route.batch_id).all()
+    if not bin_data:
+        return {"error": "No bin data found for the latest batch."}
+
+    # Rebuild the graph
+    G = nx.Graph()
+    for bin in bin_data:
+        G.add_node(bin.id, pos=tuple(bin.position), fill_level=bin.fill_level)
+
+    # Add the saved edges from the route
+    for edge in last_route.edges:
+        G.add_edge(edge["from"], edge["to"], weight=edge["weight"])
+
+    # Run all four algorithms on the same graph
+    o_route, o_dist, o_cov = find_best_route(G, threshold)
+    d_route, d_dist, d_cov = find_best_route_using_djikstra(G, threshold)
+    a_route, a_dist, a_cov = find_best_route_using_astar(G, threshold)
+    n_route, n_dist, n_cov = find_naive_route(G, threshold)
 
     return {
         "dijkstra": {"distance": round(d_dist, 2), "bins": d_cov, "route": d_route},
