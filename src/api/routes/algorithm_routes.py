@@ -103,32 +103,52 @@ def view_last_route(db: Session = Depends(get_db)):
     </html>
     """)
 
-
 def visualize_graph_from_data(bins_positions, route_nodes, edges, fill_level_data=None, threshold=0.7):
     G = nx.Graph()
 
     for bin_id, pos in bins_positions.items():
         G.add_node(bin_id, pos=tuple(pos))
 
-    # Add original edges
     for edge in edges:
         G.add_edge(edge["from"], edge["to"], weight=edge["weight"])
 
-    # Coloring nodes based on fill level
+    pos = nx.get_node_attributes(G, 'pos')
+    edge_labels = {(e["from"], e["to"]): f'{e["weight"]:.1f}' for e in edges}
+
+    # Color nodes by fill level
     node_colors = []
     for node in G.nodes():
         fill = fill_level_data.get(node, 0) if fill_level_data else 0
         node_colors.append("red" if fill >= threshold else "skyblue")
 
-    # Route edges (highlighted)
+    # Build route edges (optimized route)
     route_edges = [(route_nodes[i], route_nodes[i + 1]) for i in range(len(route_nodes) - 1)]
 
-    pos = nx.get_node_attributes(G, 'pos')
-    plt.figure(figsize=(10, 8))
-    nx.draw(G, pos, with_labels=True, node_size=600, node_color=node_colors, font_weight='bold')
-    nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.3)  # All original edges
-    nx.draw_networkx_edges(G, pos, edgelist=route_edges, edge_color='green', width=3)  # Optimized route
+    plt.figure(figsize=(12, 9))
+    nx.draw(
+        G, pos,
+        with_labels=True,
+        node_size=600,
+        node_color=node_colors,
+        font_weight='bold',
+        font_size=10
+    )
 
+    nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.4)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
+    nx.draw_networkx_edges(G, pos, edgelist=route_edges, edge_color='green', width=3)
+
+    # Add custom legend
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor='red', label='Full Bin'),
+        Patch(facecolor='skyblue', label='Not Full Bin'),
+        Patch(edgecolor='green', facecolor='none', label='Optimized Route', linewidth=2)
+    ]
+    plt.legend(handles=legend_elements, loc='upper right')
+    plt.title("Optimized Route Visualization")
+
+    plt.tight_layout()
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     plt.close()
