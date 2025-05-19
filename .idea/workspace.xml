@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="409f0159-a945-4991-88ab-83c4a33ef4a6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/algorithm/data_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/algorithm/data_generator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/api/routes/algorithm_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/routes/algorithm_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tests/test_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/test_plot.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,25 +31,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.data_generator.executor": "Run",
-    "Python.models.executor": "Run",
-    "Python.playground.executor": "Run",
-    "Python.test_plot.executor": "Run",
-    "Python.test_routing.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/vince/Documents/MicroscopeCalculatorWithPython",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.data_generator.executor&quot;: &quot;Run&quot;,
+    &quot;Python.models.executor&quot;: &quot;Run&quot;,
+    &quot;Python.playground.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_plot.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_routing.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/vince/Documents/MicroscopeCalculatorWithPython&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\vince\PycharmProjects\WasteCollectionRouting\src\tests" />
@@ -97,7 +94,8 @@
       <workItem from="1746998294704" duration="6547000" />
       <workItem from="1747008365486" duration="102000" />
       <workItem from="1747035095274" duration="2133000" />
-      <workItem from="1747386104750" duration="3389000" />
+      <workItem from="1747386104750" duration="3508000" />
+      <workItem from="1747639687485" duration="1076000" />
     </task>
     <servers />
   </component>
