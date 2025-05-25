@@ -44,16 +44,16 @@ def generate_synthetic_data(num_bins=20):
 
     return G
 
-def visualize_graph(G, route=None):
+def visualize_graph(G, route=None, threshold = 0.7):
     pos = nx.get_node_attributes(G, 'pos')
     edge_labels = nx.get_edge_attributes(G, 'weight')
 
     node_colors = [
-        "red" if G.nodes[node].get("fill_level", 0) >= 0.7 else "skyblue"
+        "red" if G.nodes[node].get("fill_level", 0) >= threshold else "skyblue"
         for node in G.nodes()
     ]
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 9), constrained_layout=True)
     nx.draw(
         G, pos,
         with_labels=True,
@@ -70,5 +70,4 @@ def visualize_graph(G, route=None):
 
     plt.title("Waste Collection Network")
     plt.axis("off")
-    plt.tight_layout()
     plt.show()

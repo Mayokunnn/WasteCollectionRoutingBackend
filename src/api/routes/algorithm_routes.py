@@ -71,11 +71,12 @@ def optimize_route(bins: int = 20, threshold: float = 0.7, db: Session = Depends
     return RouteOptimizationResponse(
         optimized_route=route,
         total_distance=round(total_dist, 2),
-        bins_covered=bins_covered
+        bins_covered=bins_covered,
+        threshold=threshold
     )
 
 @router.get("/view-last-route", response_class=HTMLResponse)
-def view_last_route(db: Session = Depends(get_db)):
+def view_last_route(threshold: float = 0.7, db: Session = Depends(get_db)):
     # Get last saved route
     last_route = db.query(Route).order_by(Route.id.desc()).first()
     if not last_route:
@@ -91,7 +92,8 @@ def view_last_route(db: Session = Depends(get_db)):
         bins_positions,
         route_nodes,
         edges=last_route.edges,
-        fill_level_data={b.id: b.fill_level for b in bin_data}
+        fill_level_data={b.id: b.fill_level for b in bin_data},
+        threshold=threshold
     )
 
     return HTMLResponse(f"""
@@ -124,7 +126,7 @@ def visualize_graph_from_data(bins_positions, route_nodes, edges, fill_level_dat
     # Build route edges (optimized route)
     route_edges = [(route_nodes[i], route_nodes[i + 1]) for i in range(len(route_nodes) - 1)]
 
-    plt.figure(figsize=(12, 9))
+    plt.figure(figsize=(12, 9), constrained_layout=True)
     nx.draw(
         G, pos,
         with_labels=True,
@@ -148,7 +150,7 @@ def visualize_graph_from_data(bins_positions, route_nodes, edges, fill_level_dat
     plt.legend(handles=legend_elements, loc='upper right')
     plt.title("Optimized Route Visualization")
 
-    plt.tight_layout()
+
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     plt.close()
