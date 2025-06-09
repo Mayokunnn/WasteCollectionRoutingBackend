@@ -48,7 +48,7 @@ def find_best_route(graph: nx.Graph, threshold: float = 0.7):
         return nx.dijkstra_path_length(graph, route[i], route[j], weight="weight")
 
     improved = True
-    MAX_ITERATIONS = 50000
+    MAX_ITERATIONS = 100000
     iteration = 0
     while improved and iteration < MAX_ITERATIONS:
         improved = False

@@ -49,7 +49,7 @@ def visualize_graph(G, route=None, threshold = 0.7):
     edge_labels = nx.get_edge_attributes(G, 'weight')
 
     node_colors = [
-        "red" if G.nodes[node].get("fill_level", 0) >= threshold else "skyblue"
+        "skyblue"
         for node in G.nodes()
     ]
 
