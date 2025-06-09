@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: waste-routing
-    env: python
-    buildCommand: ""
-    startCommand: gunicorn app:app
